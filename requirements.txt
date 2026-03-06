@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+pandas
+streamlit
+langchain
+langgraph
+psycopg2
+redis
+sqlalchemy
+python-dotenv
+requests
