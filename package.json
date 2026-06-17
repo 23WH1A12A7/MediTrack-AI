@@ -1,0 +1,25 @@
+{
+  "name": "swasthyatrack-ai",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "start:3001": "next start -p 3001",
+    "dev:3001": "next dev --turbopack -p 3001",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "lucide-react": "^0.468.0",
+    "next": "^15.5.7",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "recharts": "^2.12.7"
+  },
+  "devDependencies": {
+    "eslint": "^9.17.0",
+    "eslint-config-next": "^15.5.7"
+  }
+}
