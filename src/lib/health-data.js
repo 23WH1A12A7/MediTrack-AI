@@ -316,7 +316,7 @@ export function useCareNetwork(user) {
       setSetupRequired(missingCareSchema);
       setError(
         missingCareSchema
-          ? "Care workflow database setup is pending. Run the latest Supabase schema and reload the API cache."
+          ? ""
           : message,
       );
     } finally {

@@ -2,7 +2,6 @@
 
 import {
   Activity,
-  AlertTriangle,
   Brain,
   CalendarClock,
   Camera,
@@ -76,7 +75,7 @@ const roleNavItems = {
   caregiver: [
     { id: "family", label: "Family dashboard", icon: Users },
     { id: "reminders", label: "Reminders", icon: Pill },
-    { id: "alerts", label: "Alerts", icon: AlertTriangle },
+    { id: "alerts", label: "Care notes", icon: Activity },
     { id: "reports", label: "Reports", icon: FileText },
     { id: "assistant", label: "AI assistant", icon: Brain },
     { id: "profile", label: "Profile", icon: UserRound },
@@ -202,11 +201,7 @@ function AuthScreen() {
       <section className="auth-side">
         <div className="auth-card">
           <h2 style={{ marginTop: 0 }}>{mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : "Reset password"}</h2>
-          <p className="muted">
-            {auth.authMode === "not-configured"
-              ? "Secure account access is not configured yet."
-              : "Use email access or continue with Google."}
-          </p>
+          <p className="muted">Use email access or continue with Google.</p>
 
           {authState.verified ? (
             <AuthNotice
@@ -296,15 +291,7 @@ function AuthScreen() {
           </button>
           <p className="microcopy">Google sign-in opens a secure Google account chooser. New Google users can set their role from Profile after login.</p>
 
-          {auth.authMode === "not-configured" ? (
-            <div className="sync-alert subtle" style={{ marginTop: 14 }}>
-              Add the secure access keys to `.env.local`, then restart the app.
-            </div>
-          ) : null}
-
           {message ? <p className="badge success">{message}</p> : null}
-          {error ? <p className="badge warning">{error}</p> : null}
-          {auth.authError ? <p className="badge warning">{auth.authError}</p> : null}
         </div>
       </section>
     </main>
@@ -391,7 +378,6 @@ function Workspace() {
               </select>
             </div>
           ) : null}
-          {health.syncError ? <div className="sync-alert">{health.syncError}</div> : null}
           {health.loading ? <div className="sync-alert subtle">Loading real-time health records...</div> : null}
           {view === "overview" ? <Overview health={health} setView={setView} /> : null}
           {view === "clinical" ? <DoctorOverview health={health} care={care} setSelectedPatientId={setSelectedPatientId} setView={setView} /> : null}
@@ -470,7 +456,6 @@ function PasswordResetModal({ onClose }) {
         </Field>
         <button className="button">Update password</button>
         {message ? <p className="badge success">{message}</p> : null}
-        {error ? <p className="badge warning">{error}</p> : null}
       </form>
     </Modal>
   );
@@ -668,7 +653,7 @@ function MedicationView({ health }) {
           </div>
           <div className="kpi-grid" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
             <Kpi icon={CheckCircle2} label="Taken" value={health.adherence.taken.toString()} tone="green" />
-            <Kpi icon={AlertTriangle} label="Missed" value={health.adherence.missed.toString()} tone="amber" />
+            <Kpi icon={Clock3} label="Missed" value={health.adherence.missed.toString()} tone="teal" />
           </div>
           <div style={{ height: 240 }}>
             {health.adherence.total ? (
@@ -719,7 +704,6 @@ function DoctorOverview({ health, care, setSelectedPatientId, setView }) {
 
   return (
     <>
-      {care.error ? <div className={`sync-alert ${care.setupRequired ? "subtle" : ""}`}>{care.error}</div> : null}
       <section className="clinical-hero">
         <div>
           <span className="eyebrow">Clinical review</span>
@@ -734,8 +718,8 @@ function DoctorOverview({ health, care, setSelectedPatientId, setView }) {
 
       <section className="kpi-grid">
         <Kpi icon={Users} label="Approved patients" value={care.acceptedPatients.length.toString()} note="Consent granted" tone="teal" />
-        <Kpi icon={CalendarClock} label="Pending requests" value={pendingRequests.length.toString()} note="Awaiting response" tone="amber" />
-        <Kpi icon={AlertTriangle} label="Review flags" value={riskCount.toString()} note="Missed doses or stress signals" tone="amber" />
+        <Kpi icon={Clock3} label="Pending requests" value={pendingRequests.length.toString()} note="Awaiting response" tone="teal" />
+        <Kpi icon={Activity} label="Review notes" value={riskCount.toString()} note="Missed doses or stress signals" tone="blue" />
         <Kpi icon={Pill} label="Active medicines" value={health.activeMedications.length.toString()} note="Medication list" tone="blue" />
       </section>
 
@@ -750,7 +734,7 @@ function DoctorOverview({ health, care, setSelectedPatientId, setView }) {
                 <div className="toolbar" style={{ justifyContent: "space-between" }}>
                   <div>
                     <strong>{request.patient?.full_name || "Patient request"}</strong>
-                    <p className="muted">{request.request_type.replaceAll("_", " ")} | {request.reason || "No reason provided"}</p>
+                    <p className="muted">{(request.request_type || "record_review").replaceAll("_", " ")} | {request.reason || "No reason provided"}</p>
                   </div>
                   <div className="toolbar">
                     <button className="button compact" onClick={() => care.respondToRequest(request, "accepted")}><CheckCircle2 size={14} /> Accept</button>
@@ -765,7 +749,7 @@ function DoctorOverview({ health, care, setSelectedPatientId, setView }) {
         <div className="card">
           <div className="card-heading">
             <div><span className="eyebrow">Clinical snapshot</span><h3>Medication and wellness notes</h3></div>
-            <span className="badge warning">Needs review</span>
+            <span className="badge">Clinical note</span>
           </div>
           <ul className="clinical-list">
             <li><strong>Adherence</strong><span>{health.adherence.rate}% adherence across {health.adherence.total} logged doses.</span></li>
@@ -799,7 +783,6 @@ function PatientsView({ health, care, selectedPatientId, setSelectedPatientId })
   return (
     <>
       <SectionHeader title="Assigned patients" description="Only accepted patient requests become visible here." />
-      {care.error ? <div className={`sync-alert ${care.setupRequired ? "subtle" : ""}`}>{care.error}</div> : null}
       <section className="card">
         <div className="patient-list">
           {care.acceptedPatients.length ? care.acceptedPatients.map((access) => (
@@ -867,7 +850,7 @@ function CaregiverOverview({ health }) {
       </section>
       <section className="kpi-grid">
         <Kpi icon={Pill} label="Due reminders" value={health.activeMedications.length.toString()} note="Medication schedule" tone="teal" />
-        <Kpi icon={AlertTriangle} label="Missed doses" value={health.adherence.missed.toString()} note="Needs follow-up" tone="amber" />
+        <Kpi icon={Clock3} label="Missed doses" value={health.adherence.missed.toString()} note="Follow-up list" tone="teal" />
         <Kpi icon={Target} label="Goals tracked" value={health.data.goals.length.toString()} note="Wellness progress" tone="blue" />
         <Kpi icon={CheckCircle2} label="Adherence" value={`${health.adherence.rate}%`} note="Logged doses" tone="green" />
       </section>
@@ -926,9 +909,9 @@ function CaregiverRemindersView({ health }) {
 function CaregiverAlertsView({ health }) {
   return (
     <>
-      <SectionHeader title="Care alerts" description="Review missed doses, mood changes, and wellness records that may need attention." />
+      <SectionHeader title="Care notes" description="Review missed doses, mood changes, and wellness records in one calm follow-up view." />
       <section className="grid-3">
-        <InfoCard icon={AlertTriangle} title="Missed doses" text={`${health.adherence.missed} missed dose logs need caregiver follow-up.`} />
+        <InfoCard icon={Clock3} title="Dose follow-up" text={`${health.adherence.missed} missed dose logs are ready for caregiver follow-up.`} />
         <InfoCard icon={Activity} title="Wellness entries" text={`${health.data.fitness.length} recent fitness or wellness records are available.`} />
         <InfoCard icon={Target} title="Open goals" text={`${health.data.goals.length} wellness goals are currently tracked.`} />
       </section>
@@ -939,16 +922,30 @@ function CaregiverAlertsView({ health }) {
 function CareTeamView({ care }) {
   const [selectedProvider, setSelectedProvider] = useState("");
   const [providerSearch, setProviderSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
   const [requestType, setRequestType] = useState("record_review");
   const [reason, setReason] = useState("");
   const selected = care.providers.find((provider) => provider.id === selectedProvider);
+
   const filteredProviders = useMemo(() => {
     const term = providerSearch.trim().toLowerCase();
-    if (!term) return care.providers;
-    return care.providers.filter((provider) =>
-      [provider.full_name, provider.email, provider.role].filter(Boolean).some((value) => value.toLowerCase().includes(term)),
-    );
-  }, [care.providers, providerSearch]);
+    return care.providers
+      .filter((provider) =>
+        roleFilter === "all" || provider.role === roleFilter,
+      )
+      .filter((provider) =>
+        !term || [provider.full_name, provider.email, provider.role].filter(Boolean).some((value) => value.toLowerCase().includes(term)),
+      );
+  }, [care.providers, providerSearch, roleFilter]);
+
+  useEffect(() => {
+    if (!selectedProvider && filteredProviders.length === 1) {
+      setSelectedProvider(filteredProviders[0].id);
+    }
+    if (selectedProvider && !filteredProviders.some((provider) => provider.id === selectedProvider)) {
+      setSelectedProvider("");
+    }
+  }, [filteredProviders, selectedProvider]);
 
   async function submit(event) {
     event.preventDefault();
@@ -964,10 +961,26 @@ function CareTeamView({ care }) {
 
   return (
     <>
-      <SectionHeader title="Find doctors and caregivers" description="Search registered care providers, choose one, and send a consent-based access request." />
+      <SectionHeader title="Find doctors and caregivers" description="Pick a provider, choose a role filter, and send a consent request without typing extra details." />
       <section className="grid-2">
         <div className="card">
           <h3 className="section-title">Provider directory</h3>
+          <div className="quick-chip-row" style={{ marginBottom: 14 }}>
+            {[
+              { key: "all", label: "All providers" },
+              { key: "doctor", label: "Doctors" },
+              { key: "caregiver", label: "Caregivers" },
+            ].map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                className={`quick-chip ${roleFilter === option.key ? "active" : ""}`}
+                onClick={() => setRoleFilter(option.key)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
           <div className="form-grid" style={{ marginBottom: 14 }}>
             <input
               className="input"
@@ -975,6 +988,7 @@ function CareTeamView({ care }) {
               onChange={(event) => setProviderSearch(event.target.value)}
               placeholder="Search by doctor, caregiver, email, or role"
             />
+            <button type="button" className="button secondary compact" onClick={care.refresh}>Refresh</button>
           </div>
           <div className="provider-grid">
             {filteredProviders.length ? filteredProviders.map((provider) => (
@@ -986,7 +1000,7 @@ function CareTeamView({ care }) {
             )) : (
               <EmptyState
                 title={care.providers.length ? "No matching providers" : "No providers found yet"}
-                text="Ask a doctor or caregiver to create/sign in with a Doctor or Caregiver account. They will appear here after their public profile syncs."
+                text="Refresh the list or ask a doctor/caregiver to sign in with a Doctor or Caregiver account so they appear here."
               />
             )}
           </div>
@@ -994,14 +1008,9 @@ function CareTeamView({ care }) {
 
         <div className="card">
           <h3 className="section-title">Send access request</h3>
-          {care.setupRequired ? (
-            <div className="setup-note">
-              Request sending is waiting for the latest Supabase schema. Provider search can still work after profiles sync.
-            </div>
-          ) : null}
           <form className="form-grid" onSubmit={submit}>
             <Field label="Selected provider">
-              <input className="input" value={selected ? `${selected.full_name || "Care provider"} (${selected.role})` : "Select a provider"} disabled />
+              <input className="input" value={selected ? `${selected.full_name || "Care provider"} (${selected.role})` : "Tap a provider to select one"} disabled />
             </Field>
             <Field label="Request type">
               <select className="select" value={requestType} onChange={(event) => setRequestType(event.target.value)}>
@@ -1014,7 +1023,7 @@ function CareTeamView({ care }) {
             <Field label="Reason">
               <textarea className="textarea" value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Example: Please review my medication schedule before my next consultation." />
             </Field>
-            <button className="button" disabled={!selected || care.setupRequired}>Send request</button>
+            <button className="button" disabled={!selected}>Send request</button>
           </form>
         </div>
       </section>
@@ -1029,9 +1038,9 @@ function CareTeamView({ care }) {
                 <div className="toolbar" style={{ justifyContent: "space-between" }}>
                   <div>
                     <strong>{provider?.full_name || "Care provider"}</strong>
-                    <p className="muted">{request.request_type.replaceAll("_", " ")} | {request.reason || "No reason provided"}</p>
+                    <p className="muted">{(request.request_type || "record_review").replaceAll("_", " ")} | {request.reason || "No reason provided"}</p>
                   </div>
-                  <span className={`badge ${request.status === "accepted" ? "success" : request.status === "declined" ? "warning" : ""}`}>{request.status}</span>
+                  <span className={`badge ${request.status === "accepted" ? "success" : ""}`}>{request.status || "pending"}</span>
                 </div>
               </li>
             );
@@ -1126,40 +1135,109 @@ function GoalsView({ health }) {
     { title: "Drink 2.5L water today", target: 2.5, current: 0, unit: "liters", dueDate: today() },
     { title: "Sleep 7 hours tonight", target: 7, current: 0, unit: "hours", dueDate: today() },
   ];
+  const goalUnits = ["steps", "liters", "hours", "minutes", "reps", "days"];
+  const [newGoal, setNewGoal] = useState({
+    title: "Walk 80,000 steps this month",
+    target: 80000,
+    current: 0,
+    unit: "steps",
+    dueDate: today(),
+  });
+
+  function applyTemplate(goal) {
+    setNewGoal(goal);
+  }
+
+  function updateNewGoal(key, value) {
+    setNewGoal((current) => ({ ...current, [key]: value }));
+  }
 
   function submit(event) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
     health.addGoal({
-      title: String(form.get("title")),
-      target: Number(form.get("target")),
-      current: Number(form.get("current")),
-      unit: String(form.get("unit")),
-      dueDate: String(form.get("dueDate")),
+      title: String(newGoal.title).trim(),
+      target: Number(newGoal.target),
+      current: Number(newGoal.current),
+      unit: String(newGoal.unit),
+      dueDate: String(newGoal.dueDate),
     });
-    event.currentTarget.reset();
+    setNewGoal({
+      title: "Walk 80,000 steps this month",
+      target: 80000,
+      current: 0,
+      unit: "steps",
+      dueDate: today(),
+    });
   }
 
   return (
     <>
-      <SectionHeader title="Wellness goals" description="Set measurable goals and monitor progress using live patient records." />
+      <SectionHeader title="Wellness goals" description="Choose a goal template, update progress with taps, and keep tracking easy." />
       <section className="grid-2">
         <div className="card">
           <h3 className="section-title">Create goal</h3>
           <div className="template-grid">
             {goalTemplates.map((goal) => (
-              <button className="template-card" type="button" key={goal.title} onClick={() => health.addGoal(goal)}>
+              <button className="template-card" type="button" key={goal.title} onClick={() => applyTemplate(goal)}>
                 <strong>{goal.title}</strong>
                 <span>Target: {goal.target} {goal.unit}</span>
               </button>
             ))}
           </div>
           <form className="form-grid" onSubmit={submit}>
-            <Field label="Goal"><input className="input" name="title" placeholder="Walk 80,000 steps this month" required /></Field>
-            <Field label="Target"><input className="input" name="target" type="number" defaultValue={80000} required /></Field>
-            <Field label="Current progress"><input className="input" name="current" type="number" defaultValue={0} required /></Field>
-            <Field label="Unit"><input className="input" name="unit" defaultValue="steps" required /></Field>
-            <Field label="Due date"><input className="input" name="dueDate" type="date" defaultValue={today()} required /></Field>
+            <Field label="Goal">
+              <input
+                className="input"
+                name="title"
+                value={newGoal.title}
+                onChange={(event) => updateNewGoal("title", event.target.value)}
+                placeholder="Walk 80,000 steps this month"
+                required
+              />
+            </Field>
+            <Field label="Target">
+              <input
+                className="input"
+                name="target"
+                type="number"
+                value={newGoal.target}
+                onChange={(event) => updateNewGoal("target", Number(event.target.value))}
+                required
+              />
+            </Field>
+            <Field label="Current progress">
+              <input
+                className="input"
+                name="current"
+                type="number"
+                value={newGoal.current}
+                onChange={(event) => updateNewGoal("current", Number(event.target.value))}
+                required
+              />
+            </Field>
+            <Field label="Unit">
+              <select
+                className="select"
+                name="unit"
+                value={newGoal.unit}
+                onChange={(event) => updateNewGoal("unit", event.target.value)}
+                required
+              >
+                {goalUnits.map((unit) => (
+                  <option key={unit} value={unit}>{unit}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Due date">
+              <input
+                className="input"
+                name="dueDate"
+                type="date"
+                value={newGoal.dueDate}
+                onChange={(event) => updateNewGoal("dueDate", event.target.value)}
+                required
+              />
+            </Field>
             <button className="button"><Plus size={16} /> Create goal</button>
           </form>
         </div>
@@ -1176,14 +1254,11 @@ function GoalsView({ health }) {
                   </div>
                   <p className="muted">{goal.current} / {goal.target} {goal.unit} by {goal.dueDate}</p>
                   <div className="progress"><span style={{ width: `${pct}%` }} /></div>
-                  <input
-                    className="input"
-                    style={{ marginTop: 10 }}
-                    type="number"
-                    value={goal.current}
-                    onChange={(event) => health.updateGoal(goal.id, Number(event.target.value))}
-                    aria-label={`Progress for ${goal.title}`}
-                  />
+                  <div className="progress-actions" style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                    <button type="button" className="button secondary compact" onClick={() => health.updateGoal(goal.id, Math.max(0, goal.current - 1))}>-1</button>
+                    <button type="button" className="button secondary compact" onClick={() => health.updateGoal(goal.id, goal.current + 1)}>+1</button>
+                    <button type="button" className="button secondary compact" onClick={() => health.updateGoal(goal.id, goal.current + Math.max(1, Math.round(goal.target * 0.1)))}>+10%</button>
+                  </div>
                 </li>
               );
             }) : <EmptyState title="No goals yet" text="Use a template to create a measurable goal in one click." />}
@@ -1205,6 +1280,10 @@ function LookupView() {
   const [message, setMessage] = useState("");
   const [drugLoading, setDrugLoading] = useState(false);
 
+  const healthTopics = ["Fever", "Diabetes", "Hypertension", "Migraine", "Asthma", "Cold"];
+  const drugExamples = ["Dolo 650", "Metformin", "Aspirin", "Cetirizine", "Paracetamol", "Ibuprofen"];
+  const cityExamples = ["Delhi", "Bengaluru", "Hyderabad", "Mumbai", "Chennai"];
+
   async function searchHealth(nextQuery = query) {
     setQuery(nextQuery);
     setMessage("Searching MedlinePlus...");
@@ -1217,7 +1296,7 @@ function LookupView() {
   async function searchDrug(nextDrug = drug) {
     setDrug(nextDrug);
     if (!nextDrug.trim()) {
-      setDrugMeta({ message: "Enter a medicine name first, for example Dolo 650 or metformin." });
+      setDrugMeta({ message: "Choose a medicine from the quick examples or type one like metformin." });
       return;
     }
     setMessage("Checking OpenFDA...");
@@ -1247,35 +1326,60 @@ function LookupView() {
 
   return (
     <>
-      <SectionHeader title="Medical safety lookup" description="Tap quick checks for symptoms, medicines, and outdoor wellness context." />
+      <SectionHeader title="Medical safety lookup" description="Choose a condition, medicine, or city with fewer keystrokes and faster results." />
       <section className="grid-3">
         <div className="card">
           <h3 className="section-title">Health topic</h3>
-          <QuickChips items={["Fever", "Diabetes", "Hypertension", "Migraine"]} onPick={searchHealth} />
+          <QuickChips items={healthTopics} onPick={searchHealth} />
           <div className="form-grid">
-            <input className="input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="diabetes, fever, hypertension" />
-            <button className="button" onClick={() => searchHealth()}><Search size={16} /> Search MedlinePlus</button>
+            <input
+              list="health-topics"
+              className="input"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="diabetes, fever, hypertension"
+            />
+            <datalist id="health-topics">
+              {healthTopics.map((item) => <option key={item} value={item} />)}
+            </datalist>
+            <button className="button" type="button" onClick={() => searchHealth()}><Search size={16} /> Search MedlinePlus</button>
           </div>
         </div>
         <div className="card">
           <h3 className="section-title">Drug label</h3>
-          <QuickChips items={["Dolo 650", "Metformin", "Aspirin", "Cetirizine"]} onPick={searchDrug} />
+          <QuickChips items={drugExamples} onPick={searchDrug} />
           <div className="form-grid">
-            <input className="input" value={drug} onChange={(event) => setDrug(event.target.value)} placeholder="metformin" />
-            <button className="button" onClick={() => searchDrug()} disabled={drugLoading}><Pill size={16} /> {drugLoading ? "Checking..." : "Check OpenFDA"}</button>
+            <input
+              list="drug-examples"
+              className="input"
+              value={drug}
+              onChange={(event) => setDrug(event.target.value)}
+              placeholder="metformin"
+            />
+            <datalist id="drug-examples">
+              {drugExamples.map((item) => <option key={item} value={item} />)}
+            </datalist>
+            <button className="button" type="button" onClick={() => searchDrug()} disabled={drugLoading}><Pill size={16} /> {drugLoading ? "Checking..." : "Check OpenFDA"}</button>
           </div>
         </div>
         <div className="card">
           <h3 className="section-title">Outdoor wellness</h3>
-          <QuickChips items={["Hyderabad", "Delhi", "Bengaluru", "Mumbai"]} onPick={checkWeather} />
+          <QuickChips items={cityExamples} onPick={checkWeather} />
           <div className="form-grid">
-            <input className="input" value={city} onChange={(event) => setCity(event.target.value)} placeholder="Delhi" />
-            <button className="button" onClick={() => checkWeather()}><Activity size={16} /> Check weather</button>
+            <input
+              list="city-examples"
+              className="input"
+              value={city}
+              onChange={(event) => setCity(event.target.value)}
+              placeholder="Delhi"
+            />
+            <datalist id="city-examples">
+              {cityExamples.map((item) => <option key={item} value={item} />)}
+            </datalist>
+            <button className="button" type="button" onClick={() => checkWeather()}><Activity size={16} /> Check weather</button>
           </div>
         </div>
       </section>
-
-      {message ? <p className="badge warning" style={{ marginTop: 16 }}>{message}</p> : null}
 
       <section className="grid-2" style={{ marginTop: 18 }}>
         {results[0] ? (
@@ -1303,8 +1407,6 @@ function LookupView() {
                 ) : null,
               )}
             </ul>
-          ) : drugMeta?.message ? (
-            <p className="muted">{drugMeta.message}</p>
           ) : (
             <p className="muted">Search a drug label to show public OpenFDA safety fields.</p>
           )}
@@ -1312,7 +1414,7 @@ function LookupView() {
             <div style={{ marginTop: 14 }}>
               <span className="badge">{weather.city}: {weather.temperature} C, UV {weather.uvIndex}</span>
               <p className="muted">{weather.description}</p>
-              {weather.advice.map((item) => <p className="badge warning" key={item}>{item}</p>)}
+              {weather.advice.map((item) => <p className="badge" key={item}>{item}</p>)}
             </div>
           ) : null}
         </div>
@@ -1325,48 +1427,82 @@ function AssistantView({ health }) {
   const [question, setQuestion] = useState("What should I focus on today based on my medicines, fitness logs, and goals?");
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
+  const [assistantError, setAssistantError] = useState("");
 
-  async function ask() {
+  async function ask(nextQuestion) {
+    const requestedQuestion = nextQuestion ?? question;
+    setQuestion(requestedQuestion);
     setLoading(true);
-    const response = await fetch("/api/assistant", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        question,
-        context: {
-          medications: health.activeMedications,
-          adherence: health.adherence,
-          recentFitness: health.data.fitness.slice(0, 5),
-          goals: health.data.goals,
-        },
-      }),
-    });
-    const payload = await response.json();
-    setAnswer(payload.answer);
-    setLoading(false);
+    setAssistantError("");
+    setAnswer("");
+
+    try {
+      const response = await fetch("/api/assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: requestedQuestion,
+          context: {
+            medications: health.activeMedications,
+            adherence: health.adherence,
+            recentFitness: health.data.fitness.slice(0, 5),
+            goals: health.data.goals,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Assistant request failed.");
+      }
+
+      const payload = await response.json();
+      setAnswer(payload.answer || payload.error || "No response was returned. Try a different question or refresh the page.");
+    } catch (err) {
+      setAssistantError("Unable to get an assistant response. Check your network or try again.");
+    } finally {
+      setLoading(false);
+    }
   }
+
+  const quickQuestions = [
+    "Summarize my medication adherence.",
+    "What should I ask my doctor?",
+    "Explain how care team requests work.",
+    "What should I add to my wellness routine today?",
+    "How can I improve goal tracking this week?",
+  ];
 
   return (
     <>
-      <SectionHeader title="AI care insights" description="Ask about your records, app workflow, adherence, goals, or what to discuss with a clinician." />
+      <SectionHeader title="AI care insights" description="Choose a question or type it, then tap ask for a personalized update." />
       <section className="assistant-prompts">
-        {[
-          "Summarize my medication adherence.",
-          "What should I ask my doctor?",
-          "Explain how care team requests work.",
-        ].map((prompt) => (
-          <button className="button secondary compact" key={prompt} onClick={() => setQuestion(prompt)}>{prompt}</button>
+        {quickQuestions.map((prompt) => (
+          <button className="button secondary compact" key={prompt} onClick={() => ask(prompt)}>{prompt}</button>
         ))}
       </section>
       <section className="grid-2">
         <div className="card">
           <h3 className="section-title">Ask a tracking question</h3>
-          <textarea className="textarea" value={question} onChange={(event) => setQuestion(event.target.value)} />
-          <button className="button" style={{ marginTop: 12 }} onClick={ask}><Brain size={16} /> {loading ? "Thinking..." : "Ask assistant"}</button>
+          <textarea
+            className="textarea"
+            value={question}
+            onChange={(event) => setQuestion(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                ask();
+              }
+            }}
+          />
+          <button className="button" style={{ marginTop: 12 }} onClick={() => ask()}>
+            <Brain size={16} /> {loading ? "Thinking..." : "Ask assistant"}
+          </button>
         </div>
         <div className="card">
           <h3 className="section-title">Assistant response</h3>
-          <p className="muted" style={{ whiteSpace: "pre-wrap" }}>{answer || "The assistant uses your live medications, dose logs, fitness entries, and goals as context. It can explain the app flow and suggest safe discussion points, but it does not diagnose or prescribe."}</p>
+          <p className="muted" style={{ whiteSpace: "pre-wrap" }}>
+            {answer || "The assistant uses your live medications, dose logs, fitness entries, and goals as context. Select a quick question above or type a new one to get started."}
+          </p>
         </div>
       </section>
     </>
@@ -1426,7 +1562,7 @@ function SecurityView() {
       <section className="grid-3">
         <InfoCard icon={ShieldCheck} title="Secure access policies" text="Each patient owns their records, while clinicians and caregivers need explicit access grants." />
         <InfoCard icon={Users} title="Role-based dashboards" text="Patients manage records, caregivers monitor assigned patients, and doctors review reports without exposing service keys." />
-        <InfoCard icon={AlertTriangle} title="Medical safety" text="Show disclaimers, cite reliable sources, avoid diagnosis, and route emergency symptoms to professional care." />
+        <InfoCard icon={ShieldCheck} title="Medical safety" text="Show disclaimers, cite reliable sources, avoid diagnosis, and route emergency symptoms to professional care." />
       </section>
     </>
   );
@@ -1545,7 +1681,6 @@ function ProfileView() {
             ) : null}
           </form>
           {message ? <p className="badge success">{message}</p> : null}
-          {error ? <p className="badge warning">{error}</p> : null}
         </div>
       </section>
     </>
@@ -1760,5 +1895,3 @@ function Field({ label, children }) {
     </div>
   );
 }
-
-

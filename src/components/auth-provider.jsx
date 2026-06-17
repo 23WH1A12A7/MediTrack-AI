@@ -19,14 +19,18 @@ function userFromSupabase(sessionUser) {
 async function syncPublicProfile(supabase, sessionUser) {
   if (!supabase || !sessionUser?.id) return;
   const profile = userFromSupabase(sessionUser);
-  await supabase.from("profiles").upsert({
-    id: profile.id,
-    email: profile.email,
-    full_name: profile.name,
-    role: profile.role,
-    phone: profile.phone,
-    avatar_url: profile.avatarUrl,
-  }, { onConflict: "id" });
+  try {
+    await supabase.from("profiles").upsert({
+      id: profile.id,
+      email: profile.email,
+      full_name: profile.name,
+      role: profile.role,
+      phone: profile.phone,
+      avatar_url: profile.avatarUrl,
+    }, { onConflict: "id" });
+  } catch {
+    // Profile sync should never block sign-in or dashboard rendering.
+  }
 }
 
 export function AuthProvider({ children }) {
@@ -77,8 +81,8 @@ export function AuthProvider({ children }) {
           setAuthError(error.message);
         }
         if (data.session?.user) {
-          await syncPublicProfile(supabase, data.session.user);
           setUser(userFromSupabase(data.session.user));
+          syncPublicProfile(supabase, data.session.user);
         } else {
           setUser(null);
         }
@@ -102,7 +106,7 @@ export function AuthProvider({ children }) {
         setRecoveryMode(true);
       }
       if (session?.user) {
-        await syncPublicProfile(supabase, session.user);
+        syncPublicProfile(supabase, session.user);
       }
       setUser(session?.user ? userFromSupabase(session.user) : null);
     });
